@@ -1,4 +1,4 @@
-from mytorch.function import Add, Dot
+from mytorch.function import Add, Dot, Relu
 import numpy as np
 
 
@@ -37,13 +37,9 @@ class Tensor:
         return out
 
     def relu(self) -> 'Tensor':
-        def _backward():
-            self.grad = (out.data > 0) * out.grad
-
-        out_data = self.data
-        out_data[out_data < 0] = 0
-        out = Tensor(out_data)
-        out.grad_fn = _backward
+        fn = Relu()
+        out = Tensor(fn.forward(self))
+        out.grad_fn = fn
         return out
 
     def backward(self) -> None:
