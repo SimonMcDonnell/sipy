@@ -1,4 +1,3 @@
-from mytorch.function import Add, Dot, Relu
 import numpy as np
 
 
@@ -26,21 +25,11 @@ class Tensor:
 
     def __add__(self, b: 'Tensor') -> 'Tensor':
         fn = Add()
-        out = Tensor(fn.forward(self, b))
-        out.grad_fn = fn
-        return out
+        return fn.forward(self, b)
 
     def dot(self, b: 'Tensor') -> 'Tensor':
         fn = Dot()
-        out = Tensor(fn.forward(self, b))
-        out.grad_fn = fn
-        return out
-
-    def relu(self) -> 'Tensor':
-        fn = Relu()
-        out = Tensor(fn.forward(self))
-        out.grad_fn = fn
-        return out
+        return fn.forward(self, b)
 
     def backward(self) -> None:
         # build the graph
@@ -60,3 +49,50 @@ class Tensor:
         for node in reversed(graph):
             if node.grad_fn:
                 node.grad_fn.backward(node.grad)
+
+
+class Function:
+    def __init__(self) -> None:
+        self.prev = []
+
+    def __call__(self, *inputs: 'Tensor') -> None:
+        # to be overwritten in every subclass
+        raise NotImplementedError
+
+    def save_for_backward(self, *tensors: 'Tensor') -> None:
+        self.prev.extend(tensors)
+
+
+class Add(Function):
+    def __repr__(self) -> str:
+        return f"Function(Add, prev={self.prev})"
+
+    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+        self.save_for_backward(a, b)
+        out = Tensor(a.data + b.data)
+        out.grad_fn = self
+        return out
+
+    def backward(self, out: np.ndarray) -> None:
+        a, b = self.prev
+        a.grad = out
+        b.grad = out
+
+
+class Dot(Function):
+    def __repr__(self) -> str:
+        return f"Function(Dot, prev={self.prev})"
+
+    def __call__(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+        return self.forward(a, b)
+
+    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+        self.save_for_backward(a, b)
+        out = Tensor(a.data.dot(b.data))
+        out.grad_fn = self
+        return out
+
+    def backward(self, out: np.ndarray) -> None:
+        a, b = self.prev
+        a.grad = out.dot(b.T.data)
+        b.grad = a.T.data.dot(out)
