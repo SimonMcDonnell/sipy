@@ -27,6 +27,10 @@ class Tensor:
         fn = Add()
         return fn.forward(self, b)
 
+    def __sub__(self, b: 'Tensor') -> 'Tensor':
+        fn = Sub()
+        return fn.forward(self, b)
+
     def dot(self, b: 'Tensor') -> 'Tensor':
         fn = Dot()
         return fn.forward(self, b)
@@ -70,6 +74,22 @@ class Add(Function):
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
         self.save_for_backward(a, b)
         out = Tensor(a.data + b.data)
+        out.grad_fn = self
+        return out
+
+    def backward(self, out: np.ndarray) -> None:
+        a, b = self.prev
+        a.grad = out
+        b.grad = out
+
+
+class Sub(Function):
+    def __repr__(self) -> str:
+        return f"Function(Sub, prev={self.prev})"
+
+    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+        self.save_for_backward(a, b)
+        out = Tensor(a.data - b.data)
         out.grad_fn = self
         return out
 

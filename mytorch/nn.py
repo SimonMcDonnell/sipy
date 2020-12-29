@@ -18,7 +18,7 @@ class Relu(Function):
         return out
 
     def backward(self, out: np.ndarray) -> None:
-        a = self.prev
+        a = self.prev[0]
         a.data[a.data <= 0] = 0
         a.data[a.data > 0] = 1
         a.grad = np.multiply(a.data, out)
@@ -47,4 +47,4 @@ class CrossEntropyLoss(Function):
         softmax = np.exp(outputs) / np.sum(np.exp(outputs),
                                            axis=1).reshape(-1, 1)
         softmax[range(len(labels)), labels] -= 1
-        (1/outputs.shape[0]) * softmax
+        a.grad = (1/outputs.shape[0]) * softmax
