@@ -1,0 +1,1 @@
+A small library for creating deep learning models from scratch. The library is built in the style of pytorch with the aim to understand how deep learning libraries are constructed from the ground up.
