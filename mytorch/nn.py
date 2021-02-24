@@ -2,6 +2,32 @@ from mytorch.tensor import Tensor, Function
 import numpy as np
 
 
+###############################################################################
+# High Level Neural Network Components
+###############################################################################
+
+class Module:
+    def __call__(self, inputs: 'Tensor') -> None:
+        return self.forward(inputs)
+
+    def forward(self, inputs: 'Tensor') -> 'Tensor':
+        # to be overwritten in every subclass
+        raise NotImplementedError
+
+
+class Linear(Module):
+    def __init__(self, in_features: int, out_features: int) -> None:
+        self.weights = Tensor(np.random.randn(in_features, out_features))
+        self.bias = Tensor(np.random.randn(out_features,))
+
+    def forward(self, inputs: 'Tensor') -> 'Tensor':
+        return inputs.dot(self.weights) + self.bias
+
+
+###############################################################################
+# Activation Functions
+###############################################################################
+
 class Relu(Function):
     def __repr__(self) -> str:
         return f"Function(ReLU, prev={self.prev})"
