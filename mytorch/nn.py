@@ -10,15 +10,16 @@ class Module:
     def __call__(self, inputs: 'Tensor') -> None:
         return self.forward(inputs)
 
-    def forward(self, inputs: 'Tensor') -> 'Tensor':
+    def forward(self, inputs: 'Tensor') -> None:
         # to be overwritten in every subclass
         raise NotImplementedError
 
 
 class Linear(Module):
     def __init__(self, in_features: int, out_features: int) -> None:
-        self.weights = Tensor(np.random.randn(in_features, out_features))
-        self.bias = Tensor(np.random.randn(out_features,))
+        self.weights = Tensor(np.random.randn(
+            in_features, out_features), requires_grad=True)
+        self.bias = Tensor(np.random.randn(out_features,), requires_grad=True)
 
     def forward(self, inputs: 'Tensor') -> 'Tensor':
         return inputs.dot(self.weights) + self.bias
@@ -30,18 +31,13 @@ class Linear(Module):
 
 class Relu(Function):
     def __repr__(self) -> str:
-        return f"Function(ReLU, prev={self.prev})"
-
-    def __call__(self, a: 'Tensor') -> 'Tensor':
-        return self.forward(a)
+        return f"Function(ReLU)"
 
     def forward(self, a: 'Tensor') -> 'Tensor':
         self.save_for_backward(a)
         out = a.data
         out[out < 0] = 0
-        out = Tensor(out)
-        out.grad_fn = self
-        return out
+        return Tensor(out, grad_fn=self, requires_grad=a.requires_grad)
 
     def backward(self, out: np.ndarray) -> None:
         a = self.prev[0]
@@ -50,22 +46,22 @@ class Relu(Function):
         a.grad = np.multiply(a.data, out)
 
 
+###############################################################################
+# Loss Functions
+###############################################################################
+
 class CrossEntropyLoss(Function):
     def __repr__(self) -> None:
-        return f"Function(CrossEntropyLoss, prev={self.prev})"
-
-    def __call__(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
-        return self.forward(outputs, labels)
+        return f"Function(CrossEntropyLoss)"
 
     def forward(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
         self.save_for_backward(outputs, labels)
-        outputs = outputs.data
+        output_data = outputs.data
         labels = labels.data
-        softmax = (np.exp(outputs[range(outputs.shape[0]), labels])) / \
-            np.sum(np.exp(outputs), axis=1)
-        out = Tensor(np.mean(-np.log(softmax)))
-        out.grad_fn = self
-        return out
+        softmax = (np.exp(output_data[range(output_data.shape[0]), labels])) / \
+            np.sum(np.exp(output_data), axis=1)
+        return Tensor(np.mean(-np.log(softmax)), grad_fn=self,
+                      requires_grad=outputs.requires_grad)
 
     def backward(self, out: np.ndarray) -> None:
         a, b = self.prev

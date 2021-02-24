@@ -2,10 +2,12 @@ import numpy as np
 
 
 class Tensor:
-    def __init__(self, data: np.ndarray) -> None:
+    def __init__(self, data: np.ndarray, grad_fn: 'Function' = None,
+                 requires_grad: bool = False) -> None:
         self.data = data
         self.grad = None
-        self.grad_fn = None
+        self.grad_fn = grad_fn
+        self.requires_grad = requires_grad
 
     @property
     def shape(self) -> tuple:
@@ -16,31 +18,31 @@ class Tensor:
         def _backward():
             self.grad = out.grad.T
 
-        out = Tensor(self.data.T)
-        out.grad_fn = _backward
+        out = Tensor(self.data.T, grad_fn=_backward,
+                     requires_grad=self.requires_grad)
         return out
 
     def __repr__(self) -> str:
-        return f"Tensor(data={self.data}, grad={self.grad})"
+        return f"Tensor(shape={self.shape}, data={self.data}, grad_fn={self.grad_fn}, requires_grad={self.requires_grad})"
 
     def __add__(self, b: 'Tensor') -> 'Tensor':
-        fn = Add()
-        return fn.forward(self, b)
+        add = Add()
+        return add(self, b)
 
     def __sub__(self, b: 'Tensor') -> 'Tensor':
-        fn = Sub()
-        return fn.forward(self, b)
+        sub = Sub()
+        return sub(self, b)
 
     def dot(self, b: 'Tensor') -> 'Tensor':
-        fn = Dot()
-        return fn.forward(self, b)
+        dot_fn = Dot()
+        return dot_fn(self, b)
 
     def backward(self) -> None:
         # build the graph
         graph, visited = [], set()
 
         def build_graph(node: 'Tensor'):
-            if node not in visited:
+            if node not in visited and node.requires_grad is True:
                 visited.add(node)
                 if node.grad_fn:
                     for prev in node.grad_fn.prev:
@@ -60,7 +62,9 @@ class Function:
         self.prev = []
 
     def __call__(self, *inputs: 'Tensor') -> None:
-        # to be overwritten in every subclass
+        return self.forward(*inputs)
+
+    def forward(self, *inputs: 'Tensor') -> None:
         raise NotImplementedError
 
     def save_for_backward(self, *tensors: 'Tensor') -> None:
@@ -69,13 +73,12 @@ class Function:
 
 class Add(Function):
     def __repr__(self) -> str:
-        return f"Function(Add, prev={self.prev})"
+        return f"Function(Add)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
         self.save_for_backward(a, b)
-        out = Tensor(a.data + b.data)
-        out.grad_fn = self
-        return out
+        return Tensor(a.data + b.data, grad_fn=self,
+                      requires_grad=(a.requires_grad or b.requires_grad))
 
     def backward(self, out: np.ndarray) -> None:
         a, b = self.prev
@@ -85,13 +88,12 @@ class Add(Function):
 
 class Sub(Function):
     def __repr__(self) -> str:
-        return f"Function(Sub, prev={self.prev})"
+        return f"Function(Sub)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
         self.save_for_backward(a, b)
-        out = Tensor(a.data - b.data)
-        out.grad_fn = self
-        return out
+        return Tensor(a.data - b.data, grad_fn=self,
+                      requires_grad=(a.requires_grad or b.requires_grad))
 
     def backward(self, out: np.ndarray) -> None:
         a, b = self.prev
@@ -101,16 +103,12 @@ class Sub(Function):
 
 class Dot(Function):
     def __repr__(self) -> str:
-        return f"Function(Dot, prev={self.prev})"
-
-    def __call__(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
-        return self.forward(a, b)
+        return f"Function(Dot)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
         self.save_for_backward(a, b)
-        out = Tensor(a.data.dot(b.data))
-        out.grad_fn = self
-        return out
+        return Tensor(a.data.dot(b.data), grad_fn=self,
+                      requires_grad=(a.requires_grad or b.requires_grad))
 
     def backward(self, out: np.ndarray) -> None:
         a, b = self.prev
