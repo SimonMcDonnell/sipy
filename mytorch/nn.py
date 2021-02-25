@@ -1,4 +1,5 @@
 from mytorch.tensor import Tensor, Function
+from typing import List
 import numpy as np
 
 
@@ -7,6 +8,10 @@ import numpy as np
 ###############################################################################
 
 class Module:
+    def __init__(self):
+        self._modules = []
+        self._parameters = []
+
     def __call__(self, inputs: 'Tensor') -> None:
         return self.forward(inputs)
 
@@ -14,36 +19,28 @@ class Module:
         # to be overwritten in every subclass
         raise NotImplementedError
 
+    def parameters(self) -> List['Tensor']:
+        pass
+        # for module in self._modules:
+        #     self.parameters.extend(module.parameters)
+
+    def __setattr__(self, name: str, value) -> None:
+        if isinstance(value, Module):
+            self._modules.append(value)
+        else:
+            object.__setattr__(self, name, value)
+
 
 class Linear(Module):
     def __init__(self, in_features: int, out_features: int) -> None:
+        super(Linear, self).__init__()
         self.weights = Tensor(np.random.randn(
             in_features, out_features), requires_grad=True)
         self.bias = Tensor(np.random.randn(out_features,), requires_grad=True)
+        self._parameters.extend([self.weights, self.bias])
 
     def forward(self, inputs: 'Tensor') -> 'Tensor':
         return inputs.dot(self.weights) + self.bias
-
-
-###############################################################################
-# Activation Functions
-###############################################################################
-
-class Relu(Function):
-    def __repr__(self) -> str:
-        return f"Function(ReLU)"
-
-    def forward(self, a: 'Tensor') -> 'Tensor':
-        self.save_for_backward(a)
-        out = a.data
-        out[out < 0] = 0
-        return Tensor(out, grad_fn=self, requires_grad=a.requires_grad)
-
-    def backward(self, out: np.ndarray) -> None:
-        a = self.prev[0]
-        a.data[a.data <= 0] = 0
-        a.data[a.data > 0] = 1
-        a.grad = np.multiply(a.data, out)
 
 
 ###############################################################################
