@@ -11,7 +11,7 @@ class Relu(Function):
         return f"Function(ReLU)"
 
     def forward(self, a: 'Tensor') -> 'Tensor':
-        self.save_for_backward(a)
+        self.save_for_backward([a])
         out = a.data
         out[out < 0] = 0
         return Tensor(out, grad_fn=self, requires_grad=a.requires_grad)

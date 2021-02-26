@@ -20,15 +20,14 @@ class Module:
         raise NotImplementedError
 
     def parameters(self) -> List['Tensor']:
-        pass
-        # for module in self._modules:
-        #     self.parameters.extend(module.parameters)
+        for module in self._modules:
+            self._parameters.extend(module.parameters())
+        return self._parameters
 
     def __setattr__(self, name: str, value) -> None:
         if isinstance(value, Module):
             self._modules.append(value)
-        else:
-            object.__setattr__(self, name, value)
+        object.__setattr__(self, name, value)
 
 
 class Linear(Module):
@@ -52,7 +51,7 @@ class CrossEntropyLoss(Function):
         return f"Function(CrossEntropyLoss)"
 
     def forward(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
-        self.save_for_backward(outputs, labels)
+        self.save_for_backward([outputs, labels])
         output_data = outputs.data
         labels = labels.data
         softmax = (np.exp(output_data[range(output_data.shape[0]), labels])) / \

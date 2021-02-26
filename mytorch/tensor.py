@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List
 
 
 class Tensor:
@@ -67,8 +68,8 @@ class Function:
     def forward(self, *inputs: 'Tensor') -> None:
         raise NotImplementedError
 
-    def save_for_backward(self, *tensors: 'Tensor') -> None:
-        self.prev.extend(tensors)
+    def save_for_backward(self, tensors: List['Tensor']) -> None:
+        self.prev = tensors
 
 
 class Add(Function):
@@ -76,7 +77,7 @@ class Add(Function):
         return f"Function(Add)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
-        self.save_for_backward(a, b)
+        self.save_for_backward([a, b])
         return Tensor(a.data + b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
@@ -91,7 +92,7 @@ class Sub(Function):
         return f"Function(Sub)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
-        self.save_for_backward(a, b)
+        self.save_for_backward([a, b])
         return Tensor(a.data - b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
@@ -106,7 +107,7 @@ class Dot(Function):
         return f"Function(Dot)"
 
     def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
-        self.save_for_backward(a, b)
+        self.save_for_backward([a, b])
         return Tensor(a.data.dot(b.data), grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
