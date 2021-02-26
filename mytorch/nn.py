@@ -20,13 +20,12 @@ class Module:
         raise NotImplementedError
 
     def parameters(self) -> List['Tensor']:
-        for module in self._modules:
-            self._parameters.extend(module.parameters())
         return self._parameters
 
     def __setattr__(self, name: str, value) -> None:
         if isinstance(value, Module):
             self._modules.append(value)
+            self._parameters.extend(value.parameters())
         object.__setattr__(self, name, value)
 
 
