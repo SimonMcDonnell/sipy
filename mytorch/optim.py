@@ -3,22 +3,30 @@ from typing import List
 import numpy as np
 
 
-class SGD:
-    # SGD with momentum
-    def __init__(self, parameters: List['Tensor'], lr: float = 0.01,
-                 gamma: float = 0.9) -> None:
-        self.parameters = parameters
+class Optimizer:
+    def __init__(self, params: List['Tensor'], lr: float = 1e-3) -> None:
+        self.params = params
         self.lr = lr
-        self.gamma = gamma
-        self.v_prev = [np.zeros(param.shape) for param in self.parameters]
 
     def zero_grad(self) -> None:
-        for param in self.parameters:
-            param.grad = 0.0
+        for param in self.params:
+            param.grad = 0
 
     def step(self) -> None:
-        for i in range(len(self.parameters)):
+        raise NotImplementedError
+
+
+class SGD(Optimizer):
+    # SGD with momentum
+    def __init__(self, params: List['Tensor'], lr: float = 1e-3,
+                 gamma: float = 0.9) -> None:
+        super(SGD, self).__init__(params, lr)
+        self.gamma = gamma
+        self.v_prev = [np.zeros(param.shape) for param in self.params]
+
+    def step(self) -> None:
+        for i in range(len(self.params)):
             v_t = (self.gamma * self.v_prev[i]) + \
-                (self.lr * self.parameters[i].grad)
-            self.parameters[i].data = self.parameters[i].data - v_t
+                (self.lr * self.params[i].grad)
+            self.params[i].data = self.params[i].data - v_t
             self.v_prev[i] = v_t
