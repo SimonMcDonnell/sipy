@@ -45,6 +45,23 @@ class Linear(Module):
 # Loss Functions
 ###############################################################################
 
+class BCELoss(Function):
+    def __repr__(self) -> None:
+        return f"Function(BCELoss)"
+
+    def forward(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
+        self.save_for_backward([outputs, labels])
+        output_data = outputs.data
+        labels = labels.data
+        loss = -(labels * np.log(output_data)) - \
+            ((1-labels) * np.log(1-output_data))
+        return Tensor(np.mean(loss), grad_fn=self,
+                      requires_grad=outputs.requires_grad)
+
+    def backward(self, out: np.ndarray) -> None:
+        pass
+
+
 class CrossEntropyLoss(Function):
     def __repr__(self) -> None:
         return f"Function(CrossEntropyLoss)"
