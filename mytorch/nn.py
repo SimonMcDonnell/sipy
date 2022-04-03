@@ -59,7 +59,9 @@ class BCELoss(Function):
                       requires_grad=outputs.requires_grad)
 
     def backward(self, out: np.ndarray) -> None:
-        pass
+        a, b = self.prev
+        outputs, labels = a.data, b.data
+        a.grad = (-labels/outputs) + (1-labels)/(1-outputs)
 
 
 class CrossEntropyLoss(Function):
