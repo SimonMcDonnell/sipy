@@ -36,7 +36,8 @@ class Tensor:
         return sub(self, b)
     
     def __matmul__(self, b: Tensor) -> Tensor:
-        return self.dot(b)
+        dot_fn = Dot()
+        return dot_fn(self, b)
 
     def dot(self, b: Tensor) -> Tensor:
         dot_fn = Dot()
@@ -73,8 +74,11 @@ class Function:
     def forward(self, *inputs: Tensor) -> None:
         raise NotImplementedError
 
-    def save_for_backward(self, tensors: list[Tensor]) -> None:
-        self.prev = tensors
+    def backward(self, out: np.ndarray) -> None:
+        raise NotImplementedError
+    
+    def save_for_backward(self, *tensors: Tensor) -> None:
+        self.prev = list(tensors)
 
 
 class Add(Function):
@@ -83,7 +87,7 @@ class Add(Function):
         return f"Function(Add)"
 
     def forward(self, a: Tensor, b: Tensor) -> Tensor:
-        self.save_for_backward([a, b])
+        self.save_for_backward(a, b)
         return Tensor(a.data + b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
@@ -99,7 +103,7 @@ class Sub(Function):
         return f"Function(Sub)"
 
     def forward(self, a: Tensor, b: Tensor) -> Tensor:
-        self.save_for_backward([a, b])
+        self.save_for_backward(a, b)
         return Tensor(a.data - b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
@@ -115,7 +119,7 @@ class Dot(Function):
         return f"Function(Dot)"
 
     def forward(self, a: Tensor, b: Tensor) -> Tensor:
-        self.save_for_backward([a, b])
+        self.save_for_backward(a, b)
         return Tensor(a.data @ b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 

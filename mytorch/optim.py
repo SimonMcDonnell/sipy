@@ -3,6 +3,7 @@ from mytorch.tensor import Tensor
 
 
 class Optimizer:
+
     def __init__(self, params: list[Tensor], lr: float = 1e-3) -> None:
         self.params = params
         self.lr = lr
@@ -16,6 +17,7 @@ class Optimizer:
 
 
 class SGD(Optimizer):
+
     # SGD with momentum
     def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  gamma: float = 0.9) -> None:
@@ -31,9 +33,9 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
-    def __init__(self, params: list[Tensor], lr: float = 1e-3,
-                 b1: float = 0.9, b2: float = 0.999,
-                 epsilon: float = 1e-8) -> None:
+
+    def __init__(self, params: list[Tensor], lr: float = 1e-3, b1: float = 0.9, 
+                 b2: float = 0.999, epsilon: float = 1e-8) -> None:
         super().__init__(params, lr)
         self.b1 = b1
         self.b2 = b2

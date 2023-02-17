@@ -7,14 +7,15 @@ from mytorch.tensor import Tensor, Function
 # High Level Neural Network Components
 ###############################################################################
 
+
 class Module:
 
     def __init__(self):
         self._modules = []
         self._parameters = []
 
-    def __call__(self, inputs: Tensor) -> None:
-        return self.forward(inputs)
+    def __call__(self, *inputs: Tensor) -> None:
+        return self.forward(*inputs)
 
     def forward(self, inputs: Tensor) -> None:
         # to be overwritten in every subclass
@@ -50,58 +51,40 @@ class Linear(Module):
 
 class ReLU(Module):
 
+    def __init__(self) -> None:
+        super().__init__()
+
     def forward(self, a: Tensor) -> Tensor:
-        return F.ReLU()(a)
+        return F.relu(a)
 
 
 class Sigmoid(Module):
 
+    def __init__(self) -> None:
+        super().__init__()
+
     def forward(self, a: Tensor) -> Tensor:
-        return F.Sigmoid()(a)
+        return F.sigmoid(a)
 
 
 ###############################################################################
 # Loss Functions
 ###############################################################################
 
-class BCELoss(Function):
 
-    def __repr__(self) -> None:
-        return f"Function(BCELoss)"
+class BCELoss(Module):
 
-    def forward(self, outputs: Tensor, labels: Tensor) -> Tensor:
-        self.save_for_backward([outputs, labels])
-        output_data = outputs.data
-        labels = labels.data
-        loss = -(labels * np.log(output_data)) - \
-            ((1-labels) * np.log(1-output_data))
-        return Tensor(np.mean(loss), grad_fn=self,
-                      requires_grad=outputs.requires_grad)
-
-    def backward(self, out: np.ndarray) -> None:
-        a, b = self.prev
-        outputs, labels = a.data, b.data
-        a.grad = (-labels/outputs) + (1-labels)/(1-outputs)
-
-
-class CrossEntropyLoss(Function):
-
-    def __repr__(self) -> None:
-        return f"Function(CrossEntropyLoss)"
+    def __init__(self):
+        super().__init__()
 
     def forward(self, outputs: Tensor, labels: Tensor) -> Tensor:
-        self.save_for_backward([outputs, labels])
-        output_data = outputs.data
-        labels = labels.data
-        softmax = (np.exp(output_data[range(output_data.shape[0]), labels])) / \
-            np.sum(np.exp(output_data), axis=1)
-        return Tensor(np.mean(-np.log(softmax)), grad_fn=self,
-                      requires_grad=outputs.requires_grad)
+        return F.binary_cross_entropy(outputs, labels)
 
-    def backward(self, out: np.ndarray) -> None:
-        a, b = self.prev
-        outputs, labels = a.data, b.data
-        softmax = np.exp(outputs) / np.sum(np.exp(outputs),
-                                           axis=1).reshape(-1, 1)
-        softmax[range(len(labels)), labels] -= 1
-        a.grad = (1/outputs.shape[0]) * softmax
+
+class CrossEntropyLoss(Module):
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, outputs: Tensor, labels: Tensor) -> Tensor:
+        return F.cross_entropy(outputs, labels)
