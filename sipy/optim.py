@@ -1,5 +1,5 @@
 import numpy as np
-from mytorch.tensor import Tensor
+from sipy.tensor import Tensor
 
 
 class Optimizer:

@@ -1,5 +1,5 @@
 import numpy as np
-from mytorch.tensor import Tensor, Function
+from sipy.tensor import Tensor, Function
 
 
 ###############################################################################

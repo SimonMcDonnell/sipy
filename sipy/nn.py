@@ -1,6 +1,6 @@
 import numpy as np
-import mytorch.functional as F
-from mytorch.tensor import Tensor, Function
+import sipy.functional as F
+from sipy.tensor import Tensor, Function
 
 
 ###############################################################################
