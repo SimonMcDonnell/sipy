@@ -1,6 +1,6 @@
-from mytorch.tensor import Tensor, Function
-from typing import List
 import numpy as np
+import mytorch.functional as F
+from mytorch.tensor import Tensor, Function
 
 
 ###############################################################################
@@ -8,18 +8,19 @@ import numpy as np
 ###############################################################################
 
 class Module:
+
     def __init__(self):
         self._modules = []
         self._parameters = []
 
-    def __call__(self, inputs: 'Tensor') -> None:
+    def __call__(self, inputs: Tensor) -> None:
         return self.forward(inputs)
 
-    def forward(self, inputs: 'Tensor') -> None:
+    def forward(self, inputs: Tensor) -> None:
         # to be overwritten in every subclass
         raise NotImplementedError
 
-    def parameters(self) -> List['Tensor']:
+    def parameters(self) -> list[Tensor]:
         return self._parameters
 
     def __setattr__(self, name: str, value) -> None:
@@ -30,15 +31,33 @@ class Module:
 
 
 class Linear(Module):
+
     def __init__(self, in_features: int, out_features: int) -> None:
-        super(Linear, self).__init__()
+        super().__init__()
         self.weights = Tensor(np.random.randn(
             in_features, out_features), requires_grad=True)
         self.bias = Tensor(np.random.randn(out_features,), requires_grad=True)
         self._parameters.extend([self.weights, self.bias])
 
-    def forward(self, inputs: 'Tensor') -> 'Tensor':
-        return inputs.dot(self.weights) + self.bias
+    def forward(self, inputs: Tensor) -> Tensor:
+        return inputs @ self.weights + self.bias
+    
+
+###############################################################################
+# Activation Functions
+###############################################################################
+
+
+class ReLU(Module):
+
+    def forward(self, a: Tensor) -> Tensor:
+        return F.ReLU()(a)
+
+
+class Sigmoid(Module):
+
+    def forward(self, a: Tensor) -> Tensor:
+        return F.Sigmoid()(a)
 
 
 ###############################################################################
@@ -46,10 +65,11 @@ class Linear(Module):
 ###############################################################################
 
 class BCELoss(Function):
+
     def __repr__(self) -> None:
         return f"Function(BCELoss)"
 
-    def forward(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
+    def forward(self, outputs: Tensor, labels: Tensor) -> Tensor:
         self.save_for_backward([outputs, labels])
         output_data = outputs.data
         labels = labels.data
@@ -65,10 +85,11 @@ class BCELoss(Function):
 
 
 class CrossEntropyLoss(Function):
+
     def __repr__(self) -> None:
         return f"Function(CrossEntropyLoss)"
 
-    def forward(self, outputs: 'Tensor', labels: 'Tensor') -> 'Tensor':
+    def forward(self, outputs: Tensor, labels: Tensor) -> Tensor:
         self.save_for_backward([outputs, labels])
         output_data = outputs.data
         labels = labels.data

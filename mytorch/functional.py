@@ -2,19 +2,11 @@ from mytorch.tensor import Tensor, Function
 import numpy as np
 
 
-def relu(input: 'Tensor') -> 'Tensor':
-    return Relu()(input)
-
-
-def sigmoid(input: 'Tensor') -> 'Tensor':
-    return Sigmoid()(input)
-
-
-class Relu(Function):
+class ReLU(Function):
     def __repr__(self) -> str:
         return f"Function(ReLU)"
 
-    def forward(self, a: 'Tensor') -> 'Tensor':
+    def forward(self, a: Tensor) -> Tensor:
         self.save_for_backward([a])
         out = a.data
         out[out < 0] = 0
@@ -34,7 +26,7 @@ class Sigmoid(Function):
     def sigmoid(self, input: np.ndarray) -> np.ndarray:
         return 1 / (1 + np.exp(-input))
 
-    def forward(self, a: 'Tensor') -> 'Tensor':
+    def forward(self, a: Tensor) -> Tensor:
         self.save_for_backward([a])
         out = self.sigmoid(a.data)
         return Tensor(out, grad_fn=self, requires_grad=a.requires_grad)

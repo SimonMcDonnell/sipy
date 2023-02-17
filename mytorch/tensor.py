@@ -1,9 +1,10 @@
+from __future__ import annotations
 import numpy as np
-from typing import List
 
 
 class Tensor:
-    def __init__(self, data: np.ndarray, grad_fn: 'Function' = None,
+
+    def __init__(self, data: np.ndarray, grad_fn: Function = None,
                  requires_grad: bool = False) -> None:
         self.data = data
         self.grad = None
@@ -15,7 +16,7 @@ class Tensor:
         return self.data.shape
 
     @property
-    def T(self) -> 'Tensor':
+    def T(self) -> Tensor:
         def _backward():
             self.grad = out.grad.T
 
@@ -26,15 +27,18 @@ class Tensor:
     def __repr__(self) -> str:
         return f"Tensor(shape={self.shape}, data={self.data}, grad_fn={self.grad_fn}, requires_grad={self.requires_grad})"
 
-    def __add__(self, b: 'Tensor') -> 'Tensor':
+    def __add__(self, b: Tensor) -> Tensor:
         add = Add()
         return add(self, b)
 
-    def __sub__(self, b: 'Tensor') -> 'Tensor':
+    def __sub__(self, b: Tensor) -> Tensor:
         sub = Sub()
         return sub(self, b)
+    
+    def __matmul__(self, b: Tensor) -> Tensor:
+        return self.dot(b)
 
-    def dot(self, b: 'Tensor') -> 'Tensor':
+    def dot(self, b: Tensor) -> Tensor:
         dot_fn = Dot()
         return dot_fn(self, b)
 
@@ -42,7 +46,7 @@ class Tensor:
         # build the graph
         graph, visited = [], set()
 
-        def build_graph(node: 'Tensor'):
+        def build_graph(node: Tensor):
             if node not in visited and node.requires_grad is True:
                 visited.add(node)
                 if node.grad_fn:
@@ -59,24 +63,26 @@ class Tensor:
 
 
 class Function:
+
     def __init__(self) -> None:
         self.prev = []
 
-    def __call__(self, *inputs: 'Tensor') -> None:
+    def __call__(self, *inputs: Tensor) -> None:
         return self.forward(*inputs)
 
-    def forward(self, *inputs: 'Tensor') -> None:
+    def forward(self, *inputs: Tensor) -> None:
         raise NotImplementedError
 
-    def save_for_backward(self, tensors: List['Tensor']) -> None:
+    def save_for_backward(self, tensors: list[Tensor]) -> None:
         self.prev = tensors
 
 
 class Add(Function):
+
     def __repr__(self) -> str:
         return f"Function(Add)"
 
-    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.save_for_backward([a, b])
         return Tensor(a.data + b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
@@ -88,10 +94,11 @@ class Add(Function):
 
 
 class Sub(Function):
+
     def __repr__(self) -> str:
         return f"Function(Sub)"
 
-    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.save_for_backward([a, b])
         return Tensor(a.data - b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
@@ -103,15 +110,16 @@ class Sub(Function):
 
 
 class Dot(Function):
+
     def __repr__(self) -> str:
         return f"Function(Dot)"
 
-    def forward(self, a: 'Tensor', b: 'Tensor') -> 'Tensor':
+    def forward(self, a: Tensor, b: Tensor) -> Tensor:
         self.save_for_backward([a, b])
-        return Tensor(a.data.dot(b.data), grad_fn=self,
+        return Tensor(a.data @ b.data, grad_fn=self,
                       requires_grad=(a.requires_grad or b.requires_grad))
 
     def backward(self, out: np.ndarray) -> None:
         a, b = self.prev
-        a.grad = out.dot(b.T.data)
-        b.grad = a.T.data.dot(out)
+        a.grad = out @ b.T.data
+        b.grad = a.T.data @ out

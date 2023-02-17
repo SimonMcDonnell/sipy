@@ -1,10 +1,9 @@
-from mytorch.tensor import Tensor, Function
-from typing import List
 import numpy as np
+from mytorch.tensor import Tensor
 
 
 class Optimizer:
-    def __init__(self, params: List['Tensor'], lr: float = 1e-3) -> None:
+    def __init__(self, params: list[Tensor], lr: float = 1e-3) -> None:
         self.params = params
         self.lr = lr
 
@@ -18,9 +17,9 @@ class Optimizer:
 
 class SGD(Optimizer):
     # SGD with momentum
-    def __init__(self, params: List['Tensor'], lr: float = 1e-3,
+    def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  gamma: float = 0.9) -> None:
-        super(SGD, self).__init__(params, lr)
+        super().__init__(params, lr)
         self.gamma = gamma
         self.v = [np.zeros(param.shape) for param in self.params]
 
@@ -32,10 +31,10 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
-    def __init__(self, params: List['Tensor'], lr: float = 1e-3,
+    def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  b1: float = 0.9, b2: float = 0.999,
                  epsilon: float = 1e-8) -> None:
-        super(Adam, self).__init__(params, lr)
+        super().__init__(params, lr)
         self.b1 = b1
         self.b2 = b2
         # initialize first and second moment vectors
